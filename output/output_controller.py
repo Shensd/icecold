@@ -53,6 +53,8 @@ class OutputController:
         Returns:
             file-like: returns a descriptor on success 
 
+        Raises:
+            Exception: on insufficient permissions to requested location
         """
         if self._have_permissions(location):
             return open(location, 'w')

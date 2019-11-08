@@ -1,5 +1,5 @@
 import sys
-from args.cmdargparser import CmdArgParser
+from args.cmdargparser import CmdArgParser, CmdFlag
 from scraper.wordlist_site_scraper import WordListSiteScraper
 from output.output_controller import OutputController
 from wordlist.wordlist_processor import WordListProcessor
@@ -41,12 +41,21 @@ memory, this can be done by progressively reading and writing words
 def main(argv):
     arg_string = " ".join(argv)
 
-    command = CmdArgParser(arg_string)
+    cmd_flags = [
+        CmdFlag(
+            "url",
+            "base url to scrape",
+            short_name="u",
+            accepted_type="str"
+        )
+    ]
+
+    command = CmdArgParser(arg_string, cmd_flags)
     out = OutputController("", standard_out=True)
     wl_processor = WordListProcessor(out)
 
-    if "url" in command.flags:
-        scraper = WordListSiteScraper(command.flags["url"], wl_processor, depth=1)
+    if command.flags[0].value:
+        scraper = WordListSiteScraper(command.flags[0].value, wl_processor, depth=1)
 
 if __name__ == "__main__":
     main(sys.argv)
