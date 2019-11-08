@@ -25,7 +25,7 @@ class OutputController:
             line (str): line to write to output stream
         """
         if self._stdout:
-            print(line)
+            print(line, end="")
         else:
             self._file_descriptor.write(line)
 

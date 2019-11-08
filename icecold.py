@@ -1,8 +1,8 @@
 import sys
 from args.cmdargparser import CmdArgParser
 from scraper.wordlist_site_scraper import WordListSiteScraper
-from output.outputcontroller import OutputController
-from wordlist.wordlistprocessor import WordListProcessor
+from output.output_controller import OutputController
+from wordlist.wordlist_processor import WordListProcessor
 
 """
 There are essentailly 3 parts to this project

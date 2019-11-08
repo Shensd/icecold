@@ -1,3 +1,7 @@
+import re
+
+from wordlist.filters import *
+
 class WordListProcessor:
     """Processes given words and writes them to output controller
 
@@ -21,12 +25,41 @@ class WordListProcessor:
         
 
     def process(self, word_groups):
+        """Run the given set of word groups through a set of filters to create
+        passwords
+
+        Parameters:
+            word_groups (list): list of strings to be turned into passwords
+        """
 
         def is_empty(string):
             return string.strip() == ""
+        def remove_empty(groups):
+            return [ word for word in word_groups if not is_empty(word) ]
 
-        word_groups = [word for word in word_groups if not is_empty(word)]
+        # remove empty words
+        word_groups = remove_empty(word_groups)
 
+        filters = [
+            FilterNoCaps(),
+            FilterNoNumbers(),
+            FilterOnlyEnglishLetters(),
+            FilterNoSymbols(),
+            FilterMakeWordChains()
+        ]
+
+        for strain in filters:
+            word_groups = strain.filter_words(
+                word_groups, 
+                charset=self._charset, 
+                max_combo=3,
+                min_length=4,
+                max_length=12
+            )
+
+        # remove empty words again
+        word_groups = remove_empty(word_groups)
+        
         for word in word_groups:
-            self._output.write(word)
+            self._output.write("{}\n".format(word))
         
