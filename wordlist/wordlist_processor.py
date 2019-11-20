@@ -52,9 +52,9 @@ class WordListProcessor:
             word_groups = strain.filter_words(
                 word_groups, 
                 charset=self._charset, 
-                max_combo=3,
+                max_combo=4,
                 min_length=4,
-                max_length=12
+                max_length=15
             )
 
         # remove empty words again

@@ -52,7 +52,7 @@ def main(argv):
 
     command = CmdArgParser(arg_string, cmd_flags)
     out = OutputController("", standard_out=True)
-    wl_processor = WordListProcessor(out)
+    wl_processor = WordListProcessor(out, charset="-_")
 
     if command.flags[0].value:
         scraper = WordListSiteScraper(command.flags[0].value, wl_processor, depth=1)

@@ -22,6 +22,8 @@ class CmdFlag(dict):
 
         self.value = None
 
+        self.names = [ self.name, self.short_name ]
+
 
     def _try_cast(self, value, typename):
         """Attempt to cast a value to the given typename, returns the converted
@@ -55,11 +57,11 @@ class CmdFlag(dict):
         """
         value = self._try_cast(value, self.accepted_type)
 
-        if type(value) == self.accepted_type:
+        if value:
             self.value = value
             return True
         return False
-    
+
     def __len__(self):
         return int(self.value != None)
 
@@ -78,6 +80,9 @@ class CmdFlag(dict):
         if self.short_name:
             return [ self.name, self.short_name ]
         return [ self.name ]
+
+    def __str__(self):
+        return self.name
 
 class CmdArgParser:
     """Given a raw string of arguments from the command line, parse them and 
@@ -125,7 +130,7 @@ class CmdArgParser:
             name = self._get_flag_name(token)
 
             for flag in cmd_flags:
-                if name in flag:
+                if name in flag.names:
                     return flag
 
         return None
@@ -170,8 +175,7 @@ class CmdArgParser:
             flag = self._get_flag(flag_name, cmd_flags)
 
             # current flag is flag but value is also flag, set to true
-            if flag and self._get_flag(value, cmd_flags):
-
+            if flag != None and self._get_flag(value, cmd_flags):
                 # check for error setting flag value
                 if not flag.set_value(True):
                     flag_name = self._get_flag_name(flag_name)
@@ -179,8 +183,7 @@ class CmdArgParser:
                         "No value given for {} but {} required".format(flag_name, flag.accepted_type))
 
             # current flag is flag and next is value
-            if flag and not self._get_flag(value, cmd_flags):
-                
+            if flag != None and not self._get_flag(value, cmd_flags):
                 # check for error setting flag value
                 if not flag.set_value(value):
                     raise Exception(

@@ -1,5 +1,5 @@
 <p align="center">
-    <img alt="Iroh" src="http://i.imgur.com/q7DYXfF.png" height="175">
+    <img alt="Iroh" src="https://i.imgur.com/oDm6umO.jpg" height="175">
 </p>
 
 ### What is this?

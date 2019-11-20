@@ -208,7 +208,8 @@ class FilterMakeWordChains(Filter):
         for i in range(0, len(tokens) - length):
             # grab tokens in the current range
             chain = tokens[i:i+length]
-
+            
+            chains.append("".join(chain))
             # iterate through the set of characters from the char set 
             for glue in charset:
                 chains.append(
