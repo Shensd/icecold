@@ -12,12 +12,16 @@ class WordListProcessor:
             joining sets of words together
         max_combo_length (int): (default=5) max number of words to chain together
             when combining multiple words for a single password
+        min_word_length (int): (default=3) minimum length of words to use
+        max_word_length (int): (default=15) maximum length of words to use
     """
 
-    def __init__(self, output_controller, charset=" _-+=.,;:", max_combo_length=5):
+    def __init__(self, output_controller, charset=" _-+=.,;:", max_combo_length=3, min_word_length=3, max_word_length=15):
         self._output = output_controller
         self._charset = charset
         self._max_combo = max_combo_length
+        self._max_word_len = max_word_length
+        self._min_word_len = min_word_length
 
     def _filter_words(self, word_groups):
         def is_empty(string):
@@ -52,9 +56,9 @@ class WordListProcessor:
             word_groups = strain.filter_words(
                 word_groups, 
                 charset=self._charset, 
-                max_combo=4,
-                min_length=4,
-                max_length=15
+                self._max_combo,
+                min_length=self._min_word_len,
+                max_length=self._max_word_len
             )
 
         # remove empty words again

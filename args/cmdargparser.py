@@ -1,30 +1,12 @@
 from pydoc import locate
 
-class CmdFlag(dict):
-    """Information structure for command line flag descriptions, contains name 
-    on construct and the value can later be set by the parser.
+__all__ = [
+    "CmdFlag",
+    "CmdDefault",
+    "CmdArgParser"
+]
 
-    Attributes:
-        name (str): long form name of flag
-        description (str): description of flag purpose
-        short_name (str): (default=None) optional short hand name of flag
-        accepted_type (str): (default='bool') accepted type for value to be 
-            read to flag, if set to bool then value will be set to true if 
-            the flag simply exists
-    """
-    def __init__(self, name, description, short_name=None, accepted_type='bool'):
-        self.name = name
-        self.short_name = short_name
-        self.description = description
-        self.accepted_type = accepted_type
-
-        self.is_bool_flag = accepted_type == 'bool'
-
-        self.value = None
-
-        self.names = [ self.name, self.short_name ]
-
-
+class CmdArg():
     def _try_cast(self, value, typename):
         """Attempt to cast a value to the given typename, returns the converted
         value on success
@@ -59,30 +41,54 @@ class CmdFlag(dict):
 
         if value:
             self.value = value
+            self.is_set = True
             return True
         return False
 
-    def __len__(self):
-        return int(self.value != None)
+class CmdFlag(CmdArg):
+    """Information structure for command line flag descriptions, contains name 
+    on construct and the value can later be set by the parser.
 
-    def __getitem__(self, key):
-        if key == "value":
-            return self.value
-        if key == self.name or key == self.short_name:
-            return True
-        return None
+    Attributes:
+        name (str): long form name of flag
+        description (str): description of flag purpose
+        short_name (str): (default=None) optional short hand name of flag
+        accepted_type (str): (default='bool') accepted type for value to be 
+            read to flag, if set to bool then value will be set to true if 
+            the flag simply exists
+    """
+    def __init__(self, name, description, short_name=None, accepted_type='bool'):
+        self.name = name
+        self.short_name = short_name
+        self.description = description
+        self.accepted_type = accepted_type
 
-    def __setitem__(self, key, value):
-        if key == "value":
-            self.set_value(value)
+        self.is_bool_flag = accepted_type == 'bool'
 
-    def __iter__(self):
-        if self.short_name:
-            return [ self.name, self.short_name ]
-        return [ self.name ]
+        self.value = None
+
+        self.names = [ self.name, self.short_name ]
+
+        self.is_set = False
 
     def __str__(self):
         return self.name
+
+class CmdDefault(CmdArg):
+    """A named default value, if there is a value given without an associated
+    flag then it will be read into an object such as this
+
+    Attributes:
+        name (str): name of default value
+        accepted_type(str): string name of the accepted type to be used for the
+            default flag
+
+    """
+    def __init__(self, name, accepted_type='str'):
+        self.name = name
+        self.accepted_type = accepted_type 
+
+        self.is_set = False
 
 class CmdArgParser:
     """Given a raw string of arguments from the command line, parse them and 
@@ -91,16 +97,20 @@ class CmdArgParser:
     Attributes:
         arg_string (str): argument string to parse
         cmd_flags (list(CmdFlag)): list of CmdFlags for reading values into
+        default_flags (list(CmdDefault)): list of default flags to be read into,
+            an attempt will be made to match given values to a matching default
+            variable, but for the most part they will be used in the order given
     """
 
     FLAG_SHORT = "-"
     FLAG_LONG = "--"
 
-    def __init__(self, arg_string, cmd_flags):
+    def __init__(self, arg_string, cmd_flags, default_flags=[]):
         self.text = arg_string
         self.flags = cmd_flags
+        self.default_flags = default_flags
         
-        self._parse_arg_string(arg_string, cmd_flags)
+        self._parse_arg_string(arg_string, self.flags, self.default_flags)
 
     def _get_tokens(self, arg_string):
         """Get the tokens of an argument string
@@ -151,12 +161,14 @@ class CmdArgParser:
                 return flag[(i):]
         return flag
 
-    def _parse_arg_string(self, arg_string, cmd_flags):
+    def _parse_arg_string(self, arg_string, cmd_flags, default_flags):
         """Parse a given argument string and return the set properties
 
         Parameters:
             arg_string (str): argument string
             cmd_flags (list(CmdFlag)): list of command flags
+            default_flags (list(CmdDefault)): list of default flags, will be used
+                in order given with attempts to match given values
 
         Returns:
             dict: a dictionary containing the argument strings fields 
@@ -182,6 +194,8 @@ class CmdArgParser:
                     raise Exception(
                         "No value given for {} but {} required".format(flag_name, flag.accepted_type))
 
+                continue
+
             # current flag is flag and next is value
             if flag != None and not self._get_flag(value, cmd_flags):
                 # check for error setting flag value
@@ -191,6 +205,31 @@ class CmdArgParser:
 
                 # next value was eaten so skip over it on next loop
                 i+=1
+
+                continue
+            
+            # given flag is actually an in place value, read into default args,
+            # if there is any available
+            if flag == None:
+                # if there are no args open then raise exception
+                if all([ default.is_set for default in default_flags ]):
+                    raise Exception(
+                        "Unknown flag or Unusable value '{}'".format(flag_name))
+
+                # get all default flags that aren't already set
+                default_pool = [ default for default in default_flags if not default.is_set ]
+
+                # attempt to set to default flags until one matches
+                default_found = False
+                for default in default_pool:
+                    if default.set_value(flag_name):
+                        default_found = True
+                        break 
+                
+                # if not matching default flag is found then raise exception
+                if not default_found:
+                    raise Exception(
+                        "Unknown flag or Unusable value '{}'".format(flag_name))
         
         return cmd_flags
 

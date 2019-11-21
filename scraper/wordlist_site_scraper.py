@@ -184,11 +184,6 @@ class WordListSiteScraper:
         """
         content = self._get_page_content(url)
 
-        # only read links from page if the depth is greater than 0, this process
-        # is actually vaugely expensive 
-        if depth > 0:
-            links = self._get_page_links(url, content, leave_domain=self._leave_domain)
-
         # read words from the page until 
         read_position = 0
         words = self._get_word_elements(content, offset=0, amount=buffer_size)
@@ -199,3 +194,13 @@ class WordListSiteScraper:
             # offset read position with amount of words and read next set
             read_position += len(words)
             words = self._get_word_elements(content, offset=read_position, amount=buffer_size)
+
+        # only read links from page if the depth is greater than 0, this process
+        # is actually vaugely expensive 
+        if depth > 0:
+            links = self._get_page_links(url, content, leave_domain=self._leave_domain)
+
+            # recursive scrap links on pages
+            for link in links:
+                depth -= 1
+                self._scrape_page(link, wordlist_buffer, depth=depth, buffer_size = buffer_size)

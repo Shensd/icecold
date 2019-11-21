@@ -180,7 +180,7 @@ class FilterMakeWordChains(Filter):
 
         chains = []
 
-        for i in range(1, max_combo):
+        for i in range(1, max_combo+1):
             chains.extend(
                 self._get_lapped_chain(tokens, charset, i)
             )
