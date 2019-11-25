@@ -56,7 +56,7 @@ class WordListProcessor:
             word_groups = strain.filter_words(
                 word_groups, 
                 charset=self._charset, 
-                self._max_combo,
+                max_combo=self._max_combo,
                 min_length=self._min_word_len,
                 max_length=self._max_word_len
             )

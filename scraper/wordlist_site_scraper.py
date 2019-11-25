@@ -15,14 +15,17 @@ class WordListSiteScraper:
             if the scraper is allowed to leave the top domain
         bank_size (int): (default=100) number of text elements to store in 
             memory before processing and writing to disk
+        skip_on_no_connect (bool): (default=False) instead of raising an error
+            on no site connect, instead ignore the site and move to the next one
     """
 
-    def __init__(self, url, wordlist_processor, depth=0, leave_domain=False, bank_size=100):
+    def __init__(self, url, wordlist_processor, depth=0, leave_domain=False, bank_size=100, skip_on_no_connect=False):
         self.url = url
         self._wl_processor = wordlist_processor
         self._depth = depth
         self._leave_domain = leave_domain
         self._bank_size = bank_size
+        self._skip_unresponsive = skip_on_no_connect
 
         self._scrape_page(url, wordlist_processor, depth=depth, buffer_size=bank_size)
 
@@ -167,7 +170,7 @@ class WordListSiteScraper:
 
         return href_elements
     
-    def _scrape_page(self, url, wordlist_buffer, depth=0, buffer_size=100):
+    def _scrape_page(self, url, wordlist_buffer, depth=0, buffer_size=100, skip_unresponsive=False):
         """Scape a page at a given url for its content and links, reading out
             to the given wordlist processor as it goes
 
@@ -175,14 +178,22 @@ class WordListSiteScraper:
             url (str): url of page to scrape content from
             wordlist_buffer (WordListProcessor): a wordlist processor to read
                 out from as the scraper works through the page
-            depth (int): how many levels deep to read from the page, if set to 0 
-                then no link scraping is performed, otherwise links and scraped
-                from the page and the scraped themselves recursively
-            buffer_size (int): number of text elements to read from the page
-                before passing them to the wordlist processor to be processed
-                and written to the output location
+            depth (int): (default=0) how many levels deep to read from the page, 
+                if set to 0 then no link scraping is performed, otherwise links 
+                and scraped from the page and the scraped themselves recursively
+            buffer_size (int): (default=100) number of text elements to read 
+                from the page before passing them to the wordlist processor to 
+                be processed and written to the output location
+            skip_unresponsive (bool): (default=False) if a site is unresponsive,
+                skip scraping the site instead of throwing an exception
         """
-        content = self._get_page_content(url)
+        try:
+            content = self._get_page_content(url)
+        except:
+            if skip_unresponsive:
+                return
+            else:
+                raise Exception("Unable to connect to given url '{}'".format(url))
 
         # read words from the page until 
         read_position = 0

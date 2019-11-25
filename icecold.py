@@ -38,6 +38,30 @@ memory, this can be done by progressively reading and writing words
   piplined and then written to disk
 """
 
+def print_help(flags):
+
+    def format_flag(flag):
+        if not flag.short_name:
+            binds = "    --{}".format(flag.name)
+        else:
+            binds = "-{}, --{}".format(flag.short_name, flag.name)
+
+        return "{}\t{}".format(binds, flag.description)
+
+    header = """icecold - website wordlist generator
+
+usage: icecold.py [url] [options...]
+    """
+
+    print(header)
+
+    for flag in flags:
+        print("  {}".format(format_flag(flag)))
+
+    print("")
+    print("made with love by shensd")
+
+
 def main(argv):
     arg_string = " ".join(argv)
 
@@ -45,26 +69,60 @@ def main(argv):
         CmdFlag(
             "url",
             "Base url to scrape",
+            None,
             short_name="u",
+            accepted_type="str"
+        ),
+        CmdFlag(
+            "output",
+            "Output file location to dump wordlist (default stdout)",
+            None,
+            short_name="o",
             accepted_type="str"
         ),
         CmdFlag(
             "min-word-len",
             "Minimum word length to accept (default 3)",
+            3,
             short_name="m",
             accepted_type="int"
         ),
         CmdFlag(
             "max-word-len",
             "Maximum word length to accept (default 15)",
+            15,
             short_name="M",
             accepted_type="int"
         ),
         CmdFlag(
-            "chain-len".
+            "chain-len",
             "Maximum length to make word chains (default 3)",
+            3,
             short_name="c",
             accepted_type="int"
+        ),
+        CmdFlag(
+            "help",
+            "Display this help page",
+            False,
+            short_name='h'
+        ),
+        CmdFlag(
+            "ignore-unresponsive",
+            "Do not halt program when a website doesn't respond, skip website instead",
+            False
+        ),
+        CmdFlag(
+            "spider-depth",
+            "How many links deep to spider pages (default 1)",
+            1,
+            short_name="s",
+            accepted_type="int"
+        ),
+        CmdFlag(
+            "leave-domain",
+            "Allow leaving domain while spidering",
+            True
         )
     ]
 
@@ -79,8 +137,16 @@ def main(argv):
     out = OutputController("", standard_out=True)
     wl_processor = WordListProcessor(out, charset="-_")
 
-    if command.default_flags[0].value:
-        scraper = WordListSiteScraper(command.default_flags[0].value, wl_processor, depth=1)
+    if command.flags["help"]:
+        print_help(cmd_flags)
+
+        return
+
+    if command.flags["url"]:
+        scraper = WordListSiteScraper(command.flags["url"], wl_processor, depth=1)
+    else:
+        print("[error] No url provided.")
+        print_help(cmd_flags)
 
 if __name__ == "__main__":
     main(sys.argv)
