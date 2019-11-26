@@ -19,29 +19,43 @@ class WordListSiteScraper:
             on no site connect, instead ignore the site and move to the next one
     """
 
-    def __init__(self, url, wordlist_processor, depth=0, leave_domain=False, bank_size=100, skip_on_no_connect=False):
+    def __init__(self, url, wordlist_processor, depth=0, leave_domain=False, 
+        bank_size=100, skip_on_no_connect=False, user_agent="python-requests"):
         self.url = url
         self._wl_processor = wordlist_processor
         self._depth = depth
         self._leave_domain = leave_domain
         self._bank_size = bank_size
         self._skip_unresponsive = skip_on_no_connect
+        self._user_agent = user_agent
 
-        self._scrape_page(url, wordlist_processor, depth=depth, buffer_size=bank_size)
+        self._scrape_page(
+            url, 
+            wordlist_processor, 
+            depth=depth, 
+            buffer_size=bank_size, 
+            skip_unresponsive=skip_on_no_connect,
+            user_agent=user_agent
+        )
 
-    def _get_page_content(self, url):
+    def _get_page_content(self, url, user_agent="python-requests"):
         """Grabs the page content at a given url, raises an exception on 
         load error
 
         Parameters:
             url (str): url to website 
+            user_agent (str): user agent to use in requests
 
         Returns:
             BeautifulSoup: a parsed BeautifulSoup page object
         """
 
         try:
-            r = requests.get(url)
+            headers = {
+                'user-agent' : user_agent
+            }
+
+            r = requests.get(url, headers=headers)
         except:
             raise Exception("Unable to connect to given url '{}'".format(url))
 
@@ -152,25 +166,23 @@ class WordListSiteScraper:
         """
         a_elements = page_content.find_all('a')
 
-        def has_link_in_domain(element):
-            if element.get("href"):
-                # if requested return false if outside domain, if it doesn't matter
-                # then return true here
-                return self._is_in_domain(parent_url, element["href"]) if leave_domain else True
-            return False
-
         def is_id_link(element):
             return element.startswith("#")
 
-        # filter for elements with an href tag and an appropriate link location
-        href_elements = [ element["href"] for element in a_elements if has_link_in_domain(element)]
+        # grab links from a elements
+        links = [ element["href"] for element in a_elements if element.get("href") ]
 
         # remove id links and fix sub-links
-        href_elements = [ self._fix_url(parent_url, element) for element in href_elements if not is_id_link(element) ]
+        links = [ self._fix_url(parent_url, link) for link in links if not is_id_link(link) ]
 
-        return href_elements
+        # remove links not in domain if chosen
+        if not leave_domain:
+            links = [ link for link in links if self._is_in_domain(parent_url, link) ]
+
+        return links
     
-    def _scrape_page(self, url, wordlist_buffer, depth=0, buffer_size=100, skip_unresponsive=False):
+    def _scrape_page(self, url, wordlist_buffer, depth=0, buffer_size=100, 
+        skip_unresponsive=False, user_agent="python-requests"):
         """Scape a page at a given url for its content and links, reading out
             to the given wordlist processor as it goes
 
@@ -186,14 +198,18 @@ class WordListSiteScraper:
                 be processed and written to the output location
             skip_unresponsive (bool): (default=False) if a site is unresponsive,
                 skip scraping the site instead of throwing an exception
+            user_agent (str): user agent to use when making requests
         """
         try:
-            content = self._get_page_content(url)
+            content = self._get_page_content(url, user_agent=user_agent)
         except:
             if skip_unresponsive:
                 return
             else:
-                raise Exception("Unable to connect to given url '{}'".format(url))
+                print(
+                    "[error] Unable to connect to url {}, to ignore unresponsive urls use --ignore-unresponsive".format(url)
+                )
+                exit(0)
 
         # read words from the page until 
         read_position = 0
@@ -214,4 +230,11 @@ class WordListSiteScraper:
             # recursive scrap links on pages
             for link in links:
                 depth -= 1
-                self._scrape_page(link, wordlist_buffer, depth=depth, buffer_size = buffer_size)
+                self._scrape_page(
+                    link, 
+                    wordlist_buffer, 
+                    depth=depth, 
+                    buffer_size=buffer_size,
+                    skip_unresponsive=skip_unresponsive,
+                    user_agent=user_agent
+                )

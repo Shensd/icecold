@@ -39,6 +39,9 @@ class OutputController:
         Returns:
             bool: true if sufficient permissions, otherwise false
         """
+        if not os.path.isfile(location):
+            return True
+        
         stats = os.stat(location)
         # check specifically for write permission
         return bool(stats.st_mode & stat.S_IWUSR)

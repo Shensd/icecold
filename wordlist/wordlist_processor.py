@@ -25,8 +25,7 @@ class WordListProcessor:
 
     def _filter_words(self, word_groups):
         def is_empty(string):
-            return string.strip() == ""
-        
+            return str.strip(string) == ""
 
     def process(self, word_groups):
         """Run the given set of word groups through a set of filters to create
@@ -37,7 +36,8 @@ class WordListProcessor:
         """
 
         def is_empty(string):
-            return string.strip() == ""
+            return str.strip(string) == ""
+            #return string.replace()
         def remove_empty(groups):
             return [ word for word in word_groups if not is_empty(word) ]
 
@@ -60,9 +60,7 @@ class WordListProcessor:
                 min_length=self._min_word_len,
                 max_length=self._max_word_len
             )
-
-        # remove empty words again
-        word_groups = remove_empty(word_groups)
+            word_groups = remove_empty(word_groups)
         
         for word in word_groups:
             self._output.write("{}\n".format(word))

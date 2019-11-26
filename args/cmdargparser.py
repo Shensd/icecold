@@ -39,7 +39,7 @@ class CmdArg():
         """
         value = self._try_cast(value, self.accepted_type)
 
-        if value:
+        if value != None:
             self.value = value
             self.is_set = True
             return True
@@ -210,7 +210,10 @@ class CmdArgParser:
                 value = ""
 
             flag = self._get_flag(flag_name, cmd_flags)
-
+            
+            # if the accepted type for the flag is bool, then the intended
+            # behavior is to set it to true without passing a value since it
+            # just exists
             if flag != None and flag.accepted_type == "bool":
                 flag.set_value(True)
 
@@ -231,7 +234,6 @@ class CmdArgParser:
 
             # current flag is flag and next is value
             if flag != None and not self._get_flag(value, cmd_flags):
-
                 # check for error setting flag value
                 if not flag.set_value(value):
                     raise Exception(

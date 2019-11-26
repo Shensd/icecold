@@ -1,4 +1,10 @@
+#!/usr/bin/python3
+
 import sys
+import signal
+import os
+
+# local imports
 from args.cmdargparser import *
 from scraper.wordlist_site_scraper import WordListSiteScraper
 from output.output_controller import OutputController
@@ -74,6 +80,13 @@ def main(argv):
             accepted_type="str"
         ),
         CmdFlag(
+            "url-file",
+            "Use a file with a list of urls, with one on each line",
+            None,
+            short_name="U",
+            accepted_type="str"
+        ),
+        CmdFlag(
             "output",
             "Output file location to dump wordlist (default stdout)",
             None,
@@ -113,16 +126,29 @@ def main(argv):
             False
         ),
         CmdFlag(
-            "spider-depth",
+            "depth",
             "How many links deep to spider pages (default 1)",
             1,
-            short_name="s",
+            short_name="d",
             accepted_type="int"
         ),
         CmdFlag(
-            "leave-domain",
-            "Allow leaving domain while spidering",
-            True
+            "no-leave-domain",
+            "Disallow leaving domain while spidering",
+            False
+        ),
+        CmdFlag(
+            "ua",
+            "Set the user agent used in requests",
+            "python-requests",
+            accepted_type="str"
+        ),
+        CmdFlag(
+            "charset",
+            "Charset to use when making word chains, (default '_-')",
+            "_-",
+            short_name="c",
+            accepted_type="str"
         )
     ]
 
@@ -134,19 +160,72 @@ def main(argv):
     ]
 
     command = CmdArgParser(arg_string, cmd_flags, default_flags=default_flags)
-    out = OutputController("", standard_out=True)
-    wl_processor = WordListProcessor(out, charset="-_")
 
     if command.flags["help"]:
         print_help(cmd_flags)
 
         return
 
+    if command.flags["output"] != None:
+        out = OutputController(command.flags["output"])
+    else:
+        out = OutputController("", standard_out=True)
+
+    if command.flags["url"] and command.flags["url-file"]:
+        print("[error] Both url and url-file parameters cannot be used at the same time.")
+        print_help(cmd_flags)
+        return
+
+    wl_processor = WordListProcessor(
+        out, 
+        max_combo_length=command.flags["chain-len"],
+        min_word_length=command.flags["min-word-len"], 
+        max_word_length=command.flags["max-word-len"],
+        charset=command.flags["charset"]
+    )
+
+    if command.flags["url-file"]:
+        url_file_name = command.flags["url-file"]
+
+        if not os.path.isfile(url_file_name):
+            print("[error] Provided url file does not exist")
+            print_help(cmd_flags)
+            return
+
+        with open(url_file_name, "r") as url_file:
+            urls = url_file.readlines()
+
+            # strip whitespace and newlines at end of lines
+            urls = [ str.strip(url) for url in urls ]
+
+            for url in urls:
+                # skip empty urls
+                if url == "": continue
+
+                scrape_url(url, wl_processor, command)    
+
+        return        
+
     if command.flags["url"]:
-        scraper = WordListSiteScraper(command.flags["url"], wl_processor, depth=1)
+        scrape_url(command.flags["url"], wl_processor, command)
     else:
         print("[error] No url provided.")
         print_help(cmd_flags)
 
+def scrape_url(url, wl_processor, command):
+    scraper = WordListSiteScraper(
+        url, 
+        wl_processor, 
+        depth=command.flags["depth"],
+        leave_domain=not command.flags["no-leave-domain"],
+        skip_on_no_connect=command.flags["ignore-unresponsive"],
+        user_agent=command.flags["ua"]
+    )
+
+def sigint_handler(sig, frame):
+    print("Interrupt caught, exiting...")
+    sys.exit(0)
+
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, sigint_handler)
     main(sys.argv)
