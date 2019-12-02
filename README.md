@@ -2,6 +2,13 @@
     <img alt="icecold" src="./logo.png" height="175">
 </p>
 
+<h1 align="center">
+icecold
+</h1>
+<p  align="center">
+context aware wordlist generation
+</p>
+
 ### What is This?
 
 Icecold is a tool designed to generate wordlists based on websites, it does this by scraping words and combining and modifying them into forms that are commonly used as passwords.
@@ -69,6 +76,7 @@ usage: icecold.py [url] [options...]
       --ua	Set the user agent used in requests
   -C, --charset	Charset to use when making word chains, (default '_-')
       --words-only	Do not make word chains, just print single words (macro for -c 1)
+      --no-smush	Do not create word chains that only push words together, only use connecting characters
 ```
 
 ###### This project is licensed under the MIT Open Source license, see `LICENSE` for more information
