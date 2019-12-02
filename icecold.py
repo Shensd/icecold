@@ -10,40 +10,6 @@ from scraper.wordlist_site_scraper import WordListSiteScraper
 from output.output_controller import OutputController
 from wordlist.wordlist_processor import WordListProcessor
 
-"""
-There are essentailly 3 parts to this project
-
-- cmd argument parser
-  - output location
-  - remove captials
-  - provide list of websites
-    - allow/deny outside domain
-  - output size cap
-  - keep numbers
-
-- site scaper
-  - pick meaningful elements
-  - if recursive set then find links
-    - test if links are outside domain
-    - depth of links to search through
-
-- word list generator
-  - remove punctuation
-  - add specified characters
-  - remove/keep capitals
-  - remove/keep language/special characters
-  - remove/keep numbers
-
-I think we should make a distinct effort to separate functions for this 
-project, scraper should not modify text, just find it
-
-the main advantage we want this to have over CeWL is more efficient use of 
-memory, this can be done by progressively reading and writing words
-- a good method for this would be a variable set number of words would be 
-  read, and then they would be passed to the word list generator to be 
-  piplined and then written to disk
-"""
-
 def print_help(flags):
 
     def format_flag(flag):
@@ -147,9 +113,19 @@ def main(argv):
             "charset",
             "Charset to use when making word chains, (default '_-')",
             "_-",
-            short_name="c",
+            short_name="C",
             accepted_type="str"
-        )
+        ),
+        CmdFlag(
+            "words-only",
+            "Do not make word chains, just print single words (macro for -c 1)",
+            False
+        ),
+        CmdFlag(
+            "no-smush",
+            "Do not create word chains that only push words together, only use connecting characters",
+            False
+        ),
     ]
 
     default_flags = [
@@ -176,12 +152,16 @@ def main(argv):
         print_help(cmd_flags)
         return
 
+    if command.flags["words-only"]:
+        command.flags["chain-len"] = 1
+
     wl_processor = WordListProcessor(
         out, 
         max_combo_length=command.flags["chain-len"],
         min_word_length=command.flags["min-word-len"], 
         max_word_length=command.flags["max-word-len"],
-        charset=command.flags["charset"]
+        charset=command.flags["charset"],
+        smush_words=not command.flags["no-smush"]
     )
 
     if command.flags["url-file"]:

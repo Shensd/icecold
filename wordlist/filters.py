@@ -129,6 +129,8 @@ class FilterMakeWordChains(Filter):
             self._min_length = kwargs["min_length"]
         if "max_length" in kwargs:
             self._max_length = kwargs["max_length"]
+        if "smush_words" in kwargs:
+            self._smush_words = kwargs["smush_words"]
 
         if self._max_combo <= 0:
             raise Exception("Max combo size must be greater than 0, {} provided".format(self._max_combo))
@@ -209,7 +211,8 @@ class FilterMakeWordChains(Filter):
             # grab tokens in the current range
             chain = tokens[i:i+length]
             
-            chains.append("".join(chain))
+            if self._smush_words:
+                chains.append("".join(chain))
             # iterate through the set of characters from the char set 
             for glue in charset:
                 chains.append(

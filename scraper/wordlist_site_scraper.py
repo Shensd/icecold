@@ -50,12 +50,18 @@ class WordListSiteScraper:
             BeautifulSoup: a parsed BeautifulSoup page object
         """
 
+        def format_url(url):
+            has_http_header = re.search("((http)s*(://))", url)
+            if not has_http_header:
+                return "http://" + url
+            return url 
+
         try:
             headers = {
                 'user-agent' : user_agent
             }
 
-            r = requests.get(url, headers=headers)
+            r = requests.get(format_url(url), headers=headers)
         except:
             raise Exception("Unable to connect to given url '{}'".format(url))
 
